@@ -1,0 +1,213 @@
+/* src/components/ProductModal.module.css */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.72);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+    background: #FAF8F3;
+    width: 100%;
+    max-width: 580px;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 2.5rem;
+    position: relative;
+    animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+.close {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #8C8278;
+    transition: color 0.2s;
+}
+.close:hover { color: #1A1714; }
+
+.title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    margin-bottom: 1.5rem;
+    color: #1A1714;
+}
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* ── Image Upload ── */
+.imageSection {
+    margin-bottom: 1.5rem;
+}
+
+.mainPreview {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #F0EDE6;
+    border: 2px dashed #E2DAC8;
+    overflow: hidden;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.emptyPreview {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.emptyPreview:hover {
+    border-color: #C9A84C;
+    background: #F7F0DC;
+}
+
+.dragActive {
+    border-color: #C9A84C !important;
+    background: #F7F0DC !important;
+}
+
+.previewImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Emoji badge on top-left of image */
+.emojiBadge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(26,23,20,0.7);
+    backdrop-filter: blur(4px);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    pointer-events: none;
+    border: 1px solid rgba(201,168,76,0.4);
+}
+
+.removeImgBtn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(26,23,20,0.75);
+    border: none;
+    color: #FAF8F3;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+.removeImgBtn:hover { background: #C0392B; }
+
+.imgCounter {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(26,23,20,0.65);
+    color: #E8D5A0;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border-radius: 20px;
+}
+
+.uploadPrompt {
+    text-align: center;
+    padding: 2rem;
+    pointer-events: none;
+}
+.uploadIcon { font-size: 40px; margin-bottom: 0.75rem; opacity: 0.5; }
+.uploadText { font-size: 14px; color: #8C8278; margin-bottom: 0.25rem; }
+.uploadText span { color: #9B7D2F; text-decoration: underline; }
+.uploadHint { font-size: 11px; color: #B8A99A; letter-spacing: 0.5px; }
+
+/* Thumbnails row */
+.thumbRow {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.thumb {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border: 2px solid #E2DAC8;
+    background: #F0EDE6;
+    cursor: pointer;
+    overflow: hidden;
+    padding: 0;
+    transition: border-color 0.15s;
+}
+.thumb:hover { border-color: #C9A84C; }
+.thumbActive  { border-color: #C9A84C; }
+
+.thumbImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.thumbAdd {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border: 2px dashed #E2DAC8;
+    background: none;
+    cursor: pointer;
+    font-size: 22px;
+    color: #8C8278;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.thumbAdd:hover { border-color: #C9A84C; color: #C9A84C; background: #F7F0DC; }
+
+.hiddenInput { display: none; }
+
+/* ── Emoji picker ── */
+.emojiPicker { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; }
+.emojiBtn {
+    background: none;
+    border: 1px solid #E2DAC8;
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.emojiBtn:hover    { border-color: #C9A84C; }
+.emojiSelected     { border-color: #C9A84C; background: #F7F0DC; }
+
+.actions { display: flex; gap: 1rem; margin-top: 1.75rem; }

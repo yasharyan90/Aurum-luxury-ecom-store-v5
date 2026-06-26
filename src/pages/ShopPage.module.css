@@ -1,0 +1,39 @@
+/* src/pages/ShopPage.module.css */
+.filterBar { background: #1A1714; border-bottom: 1px solid #9B7D2F; padding: 0.85rem 2rem; }
+.filterInner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.filterLabel { color: #8C8278; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
+.filterSelect {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(201,168,76,0.2);
+  color: #E8D5A0;
+  padding: 6px 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  outline: none;
+  cursor: pointer;
+}
+.filterSelect option { background: #1A1714; }
+.count  { color: #8C8278; font-size: 10px; letter-spacing: 1px; margin-left: auto; }
+.clearBtn {
+  background: none;
+  border: 1px solid rgba(201,168,76,0.3);
+  color: #8C8278;
+  padding: 5px 12px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.clearBtn:hover { border-color: #C9A84C; color: #C9A84C; }
+
+.header { background: #F0EDE6; border-bottom: 1px solid #E2DAC8; padding: 2.5rem 0; }
+.title { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 300; }
+.subtitle { color: #8C8278; font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 0.25rem; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2rem; }
+
+.empty { text-align: center; padding: 5rem 1rem; }
+.emptyIcon { font-size: 56px; opacity: 0.3; margin-bottom: 1rem; }
+.empty h3 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; color: #8C8278; margin-bottom: 0.5rem; }
+.empty p  { color: #8C8278; margin-bottom: 2rem; font-size: 13px; }

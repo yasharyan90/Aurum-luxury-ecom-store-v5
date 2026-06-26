@@ -1,0 +1,58 @@
+/* src/pages/AuthPage.module.css */
+.page {
+  min-height: calc(100vh - 64px);
+  background: #1A1714;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+.card {
+  background: #FAF8F3;
+  width: 100%;
+  max-width: 420px;
+  padding: 3rem 2.5rem;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+
+.logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px;
+  font-weight: 300;
+  color: #C9A84C;
+  letter-spacing: 6px;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.subtitle {
+  color: #8C8278;
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-align: center;
+  text-transform: uppercase;
+  margin-bottom: 2.5rem;
+}
+
+.ornament {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.75rem 0;
+}
+.line { flex: 1; height: 1px; background: #E2DAC8; }
+.ornamentText { color: #8C8278; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; }
+
+.toggle { text-align: center; color: #8C8278; font-size: 12px; }
+.toggleLink { color: #9B7D2F; text-decoration: underline; }
+
+.demoBox {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #F0EDE6;
+  border-left: 2px solid #C9A84C;
+  font-size: 11px;
+  color: #8C8278;
+  line-height: 1.8;
+}
+.demoBox strong { display: block; color: #1A1714; margin-bottom: 4px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
