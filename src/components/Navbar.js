@@ -65,6 +65,7 @@ export default function Navbar() {
                 <Link to="/shop/Watches"           className={styles.link}>Watches</Link>
                 <Link to="/shop/Accessories"       className={styles.link}>Accessories</Link>
                 <Link to="/shop/Fragrance"         className={styles.link}>Fragrance</Link>
+                <Link to="/shop/Clothing"          className={styles.link}>Clothing</Link>
             </div>
 
             <div className={styles.right}>

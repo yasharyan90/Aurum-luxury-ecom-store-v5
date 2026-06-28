@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styles from './ProductModal.module.css';
 
 const EMOJI_OPTIONS = ['💎','💍','⌚','👜','🌹','🧡','💙','💚','🖤','💼','🌕','👑','✨','🪙','🏺'];
-const CATEGORIES = ['Jewellery','Watches','Accessories','Fragrance'];
+const CATEGORIES = ['Jewellery','Watches','Accessories','Fragrance','Clothing'];
 
 export default function ProductModal({ product = null, onClose, onSave }) {
     const isEdit = Boolean(product);
