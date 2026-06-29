@@ -1,4 +1,4 @@
-// src/pages/AdminPage.js
+// src/pages/AdminPage.js ///////////
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../App';
