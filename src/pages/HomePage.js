@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
+import { ProductGridSkeleton } from '../components/ProductCardSkeleton';
 import Footer from '../components/Footer';
 import { fetchProducts } from '../lib/productService';
 import styles from './HomePage.module.css';
@@ -11,7 +12,6 @@ const CATEGORIES = [
     { key: 'Watches',     emoji: '⌚', label: 'Watches',     sub: 'Timeless Precision'     },
     { key: 'Accessories', emoji: '👜', label: 'Accessories', sub: 'Leather & Silk'         },
     { key: 'Fragrance',   emoji: '🌹', label: 'Fragrance',   sub: 'Rare Essences'          },
-    { key: 'Clothing',    emoji: '🧥', label: 'Clothing',    sub: 'Atelier & Couture'      },
 ];
 
 export default function HomePage() {
@@ -65,13 +65,12 @@ export default function HomePage() {
                 <div className="container">
                     <h2 className={styles.sectionTitle} style={{fontStyle:'italic'}}>Featured Pieces</h2>
                     <p className={styles.sectionSub}>Hand-selected by our curators</p>
-                    {loading ? (
-                        <div className="spinner-wrap"><div className="spinner" /></div>
-                    ) : (
-                        <div className={styles.grid}>
-                            {featured.map(p => <ProductCard key={p.id} product={p} />)}
-                        </div>
-                    )}
+                    <div className={styles.grid}>
+                        {loading
+                            ? <ProductGridSkeleton count={4} />
+                            : featured.map(p => <ProductCard key={p.id} product={p} />)
+                        }
+                    </div>
                     <div className={styles.viewAll}>
                         <Link to="/shop" className="btn btn-outline">View Full Collection</Link>
                     </div>

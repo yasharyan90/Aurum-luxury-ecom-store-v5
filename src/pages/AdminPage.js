@@ -1,13 +1,22 @@
-// src/pages/AdminPage.js ///////////
+// src/pages/AdminPage.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../App';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../lib/productService';
 import { fetchOrders, updateOrderStatus } from '../lib/orderService';
 import ProductModal from '../components/ProductModal';
+import LuxuryLoader from '../components/LuxuryLoader';
+import TableSkeleton from '../components/TableSkeleton';
 import styles from './AdminPage.module.css';
 
 const TABS = ['dashboard', 'products', 'orders'];
+
+// Semantic status colors — intentionally fixed hex (not theme tokens).
+// These are universal signal colors (red=bad, green=good) that should
+// read the same regardless of light/dark mode, same convention as
+// most dashboards (GitHub, Stripe, etc. do this too).
+const STATUS_COLORS = { pending: '#D97706', processing: '#3B82F6', shipped: '#8B5CF6', delivered: '#27AE60', cancelled: '#C0392B' };
+const STOCK_COLOR = (stock) => (stock === 0 ? '#C0392B' : stock < 5 ? '#D97706' : '#27AE60');
 
 export default function AdminPage() {
     const { user, profile, signOut } = useAuth();
@@ -15,32 +24,33 @@ export default function AdminPage() {
     const [tab, setTab]           = useState('dashboard');
     const [products, setProducts] = useState([]);
     const [orders, setOrders]     = useState([]);
-    const [loading, setLoading]   = useState(false);
+    const [loadingProducts, setLoadingProducts] = useState(true);
+    const [loadingOrders, setLoadingOrders]     = useState(true);
     const [modal, setModal]       = useState(null); // null | 'add' | product obj
     const [search, setSearch]     = useState('');
     const [deleteConfirm, setDeleteConfirm] = useState(null);
 
     // ── Data loaders ─────────────────────────────────────
     const loadProducts = useCallback(async () => {
-        setLoading(true);
+        setLoadingProducts(true);
         try {
             const data = await fetchProducts({ limit: 200 });
             setProducts(data);
-        } finally { setLoading(false); }
+        } finally { setLoadingProducts(false); }
     }, []);
 
     const loadOrders = useCallback(async () => {
-        setLoading(true);
+        setLoadingOrders(true);
         try {
             const data = await fetchOrders();
             setOrders(data);
-        } finally { setLoading(false); }
+        } finally { setLoadingOrders(false); }
     }, []);
 
     useEffect(() => {
         if (tab === 'dashboard' || tab === 'products') loadProducts();
         if (tab === 'dashboard' || tab === 'orders')   loadOrders();
-    }, [tab, loadProducts, loadOrders]);
+    }, [tab]);
 
     // ── Product CRUD ──────────────────────────────────────
     const handleSave = async (data) => {
@@ -80,9 +90,8 @@ export default function AdminPage() {
         p.category.toLowerCase().includes(search.toLowerCase())
     );
 
-    const fmt       = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
-    const fmtLakh   = (n) => n >= 100000 ? `₹${(n/100000).toFixed(1)}L` : fmt(n);
-    const STATUS_COLORS = { pending:'#D97706', processing:'#3B82F6', shipped:'#8B5CF6', delivered:'#27AE60', cancelled:'#C0392B' };
+    const fmt     = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+    const fmtLakh = (n) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : fmt(n);
 
     return (
         <div className={styles.layout}>
@@ -118,7 +127,7 @@ export default function AdminPage() {
                             <p className={styles.ownerRole}>Boutique Owner</p>
                         </div>
                     </div>
-                    <button className="btn btn-outline btn-sm" onClick={signOut} style={{width:'100%',marginTop:'1rem'}}>
+                    <button className="btn btn-outline btn-sm" onClick={signOut} style={{ width: '100%', marginTop: '1rem' }}>
                         Sign Out
                     </button>
                 </div>
@@ -134,77 +143,85 @@ export default function AdminPage() {
                             <div>
                                 <h1 className={styles.pageTitle}>Dashboard</h1>
                                 <p className={styles.pageDate}>
-                                    {new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
+                                    {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Stats */}
-                        <div className={styles.statsGrid}>
-                            {[
-                                { num: products.length,           label: 'Total Products',    icon: '💎' },
-                                { num: fmtLakh(inventoryValue),   label: 'Inventory Value',  icon: '💰' },
-                                { num: lowStockCount,             label: 'Low Stock Items',   icon: '⚠️' },
-                                { num: fmtLakh(ordersTotal),      label: 'Total Revenue',     icon: '📈' },
-                            ].map(s => (
-                                <div key={s.label} className={styles.statCard}>
-                                    <div className={styles.statIcon}>{s.icon}</div>
-                                    <div className={styles.statNum}>{s.num}</div>
-                                    <div className={styles.statLabel}>{s.label}</div>
+                        {loadingProducts || loadingOrders ? (
+                            <LuxuryLoader label="Loading Dashboard" />
+                        ) : (
+                            <>
+                                {/* Stats */}
+                                <div className={styles.statsGrid}>
+                                    {[
+                                        { num: products.length,         label: 'Total Products',   icon: '💎' },
+                                        { num: fmtLakh(inventoryValue), label: 'Inventory Value',  icon: '💰' },
+                                        { num: lowStockCount,            label: 'Low Stock Items',  icon: '⚠️' },
+                                        { num: fmtLakh(ordersTotal),     label: 'Total Revenue',    icon: '📈' },
+                                    ].map(s => (
+                                        <div key={s.label} className={styles.statCard}>
+                                            <div className={styles.statIcon}>{s.icon}</div>
+                                            <div className={styles.statNum}>{s.num}</div>
+                                            <div className={styles.statLabel}>{s.label}</div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
 
-                        {/* Category Breakdown */}
-                        <div className={styles.dashGrid}>
-                            <div className={styles.panel}>
-                                <h2 className={styles.panelTitle}>Category Breakdown</h2>
-                                {['Jewellery','Watches','Accessories','Fragrance','Clothing'].map(cat => {
-                                    const count = products.filter(p => p.category === cat).length;
-                                    const pct   = products.length ? Math.round((count / products.length) * 100) : 0;
-                                    return (
-                                        <div key={cat} className={styles.catRow}>
-                                            <span className={styles.catRowName}>{cat}</span>
-                                            <div className={styles.catBar}>
-                                                <div className={styles.catBarFill} style={{ width: `${pct}%` }} />
+                                {/* Category Breakdown + Recent Orders */}
+                                <div className={styles.dashGrid}>
+                                    <div className={styles.panel}>
+                                        <h2 className={styles.panelTitle}>Category Breakdown</h2>
+                                        {['Jewellery', 'Watches', 'Accessories', 'Fragrance'].map(cat => {
+                                            const count = products.filter(p => p.category === cat).length;
+                                            const pct   = products.length ? Math.round((count / products.length) * 100) : 0;
+                                            return (
+                                                <div key={cat} className={styles.catRow}>
+                                                    <span className={styles.catRowName}>{cat}</span>
+                                                    <div className={styles.catBar}>
+                                                        <div className={styles.catBarFill} style={{ width: `${pct}%` }} />
+                                                    </div>
+                                                    <span className={styles.catRowCount}>{count}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className={styles.panel}>
+                                        <h2 className={styles.panelTitle}>Recent Orders</h2>
+                                        {orders.length === 0 ? (
+                                            <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>No orders yet.</p>
+                                        ) : orders.slice(0, 5).map(o => (
+                                            <div key={o.id} className={styles.recentOrder}>
+                                                <div>
+                                                    <p className={styles.orderId}>{o.id?.toString().slice(0, 12)}…</p>
+                                                    <p className={styles.orderCust}>{o.customer_name || o.profiles?.full_name || 'Customer'}</p>
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <p style={{ color: 'var(--gold-dark)', fontWeight: 500, fontSize: 13 }}>{fmt(o.total)}</p>
+                                                    <span className={styles.statusPill} style={{ background: STATUS_COLORS[o.status] + '22', color: STATUS_COLORS[o.status] }}>
+                            {o.status}
+                          </span>
+                                                </div>
                                             </div>
-                                            <span className={styles.catRowCount}>{count}</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        ))}
+                                    </div>
+                                </div>
 
-                            <div className={styles.panel}>
-                                <h2 className={styles.panelTitle}>Recent Orders</h2>
-                                {orders.slice(0, 5).map(o => (
-                                    <div key={o.id} className={styles.recentOrder}>
+                                {/* Low stock alert */}
+                                {lowStockCount > 0 && (
+                                    <div className={styles.alertBox}>
+                                        <span className={styles.alertIcon}>⚠️</span>
                                         <div>
-                                            <p className={styles.orderId}>{o.id?.toString().slice(0,12)}…</p>
-                                            <p className={styles.orderCust}>{o.customer_name || o.profiles?.full_name || 'Customer'}</p>
-                                        </div>
-                                        <div style={{textAlign:'right'}}>
-                                            <p style={{color:'#9B7D2F',fontWeight:500,fontSize:13}}>{fmt(o.total)}</p>
-                                            <span className={styles.statusPill} style={{background:STATUS_COLORS[o.status]+'22',color:STATUS_COLORS[o.status]}}>
-                        {o.status}
+                                            <strong>{lowStockCount} item{lowStockCount > 1 ? 's' : ''} running low on stock.</strong>
+                                            <span style={{ marginLeft: '0.75rem', color: 'var(--text-muted)', fontSize: 12 }}>
+                        {products.filter(p => p.stock < 5 && p.stock > 0).map(p => p.name).join(', ')}
                       </span>
                                         </div>
+                                        <button className="btn btn-ghost btn-sm" onClick={() => setTab('products')}>View Products</button>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Low stock alert */}
-                        {lowStockCount > 0 && (
-                            <div className={styles.alertBox}>
-                                <span className={styles.alertIcon}>⚠️</span>
-                                <div>
-                                    <strong>{lowStockCount} item{lowStockCount > 1 ? 's' : ''} running low on stock.</strong>
-                                    <span style={{marginLeft:'0.75rem',color:'#8C8278',fontSize:12}}>
-                    {products.filter(p => p.stock < 5 && p.stock > 0).map(p => p.name).join(', ')}
-                  </span>
-                                </div>
-                                <button className="btn btn-ghost btn-sm" onClick={() => setTab('products')}>View Products</button>
-                            </div>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
@@ -215,7 +232,9 @@ export default function AdminPage() {
                         <div className={styles.pageHeader}>
                             <div>
                                 <h1 className={styles.pageTitle}>Products</h1>
-                                <p className={styles.pageDate}>{products.length} pieces in collection</p>
+                                <p className={styles.pageDate}>
+                                    {loadingProducts ? 'Loading…' : `${products.length} pieces in collection`}
+                                </p>
                             </div>
                             <button className="btn btn-primary" onClick={() => setModal('add')}>
                                 + Add Product
@@ -235,73 +254,75 @@ export default function AdminPage() {
                             )}
                         </div>
 
-                        {loading ? (
-                            <div className="spinner-wrap"><div className="spinner" /></div>
-                        ) : (
-                            <div className={styles.tableWrap}>
-                                <table className={styles.table}>
-                                    <thead>
+                        <div className={styles.tableWrap}>
+                            <table className={styles.table}>
+                                <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th>Rating</th>
+                                    <th>Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {loadingProducts ? (
+                                    <TableSkeleton rows={6} cols={6} />
+                                ) : filteredProducts.length === 0 ? (
                                     <tr>
-                                        <th>Product</th>
-                                        <th>Category</th>
-                                        <th>Price</th>
-                                        <th>Stock</th>
-                                        <th>Rating</th>
-                                        <th>Actions</th>
+                                        <td colSpan={6}>
+                                            <div className={styles.emptyState}>
+                                                <div className={styles.emptyStateIcon}>💎</div>
+                                                <p>No products found{search ? ` matching "${search}"` : ''}.</p>
+                                            </div>
+                                        </td>
                                     </tr>
-                                    </thead>
-                                    <tbody>
-                                    {filteredProducts.length === 0 ? (
-                                        <tr><td colSpan={6} style={{textAlign:'center',padding:'3rem',color:'#8C8278'}}>No products found</td></tr>
-                                    ) : filteredProducts.map(p => (
-                                        <tr key={p.id}>
-                                            <td>
-                                                <div className={styles.productCell}>
-                                                    <div className={styles.productThumb}>
-                                                        {p.image_url ? (
-                                                            <img src={p.image_url} alt={p.name} className={styles.productThumbImg} />
-                                                        ) : (
-                                                            <span className={styles.productEmojiLarge}>{p.emoji || '💎'}</span>
-                                                        )}
-                                                        <span className={styles.productEmojiSmall}>{p.emoji || '💎'}</span>
-                                                    </div>
-                                                    <div>
-                                                        <div className={styles.productName}>{p.name}</div>
-                                                        <div className={styles.productBrand}>{p.brand}</div>
-                                                    </div>
+                                ) : filteredProducts.map(p => (
+                                    <tr key={p.id}>
+                                        <td>
+                                            <div className={styles.productCell}>
+                                                <div className={styles.productThumb}>
+                                                    {p.image_url ? (
+                                                        <img src={p.image_url} alt={p.name} className={styles.productThumbImg} />
+                                                    ) : (
+                                                        <span className={styles.productEmojiLarge}>{p.emoji || '💎'}</span>
+                                                    )}
+                                                    {p.image_url && <span className={styles.productEmojiSmall}>{p.emoji || '💎'}</span>}
                                                 </div>
-                                            </td>
-                                            <td>
-                                                <span className={styles.categoryPill}>{p.category}</span>
-                                            </td>
-                                            <td className={styles.priceCell}>{fmt(p.price)}</td>
-                                            <td>
-                          <span style={{color: p.stock === 0 ? '#C0392B' : p.stock < 5 ? '#D97706' : '#27AE60', fontWeight:500}}>
-                            {p.stock ?? 0}
-                              {p.stock === 0 && ' (Out)'}
-                              {p.stock > 0 && p.stock < 5 && ' (Low)'}
-                          </span>
-                                            </td>
-                                            <td>
-                                                {p.rating > 0 ? (
-                                                    <span className={styles.ratingCell}>★ {p.rating}</span>
-                                                ) : '—'}
-                                            </td>
-                                            <td>
-                                                <div className={styles.actionBtns}>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => setModal(p)}>Edit</button>
-                                                    <button
-                                                        className="btn btn-danger btn-sm"
-                                                        onClick={() => setDeleteConfirm(p)}
-                                                    >Delete</button>
+                                                <div>
+                                                    <div className={styles.productName}>{p.name}</div>
+                                                    <div className={styles.productBrand}>{p.brand}</div>
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={styles.categoryPill}>{p.category}</span>
+                                        </td>
+                                        <td className={styles.priceCell}>{fmt(p.price)}</td>
+                                        <td>
+                        <span style={{ color: STOCK_COLOR(p.stock ?? 0), fontWeight: 500 }}>
+                          {p.stock ?? 0}
+                            {p.stock === 0 && ' (Out)'}
+                            {p.stock > 0 && p.stock < 5 && ' (Low)'}
+                        </span>
+                                        </td>
+                                        <td>
+                                            {p.rating > 0 ? (
+                                                <span className={styles.ratingCell}>★ {p.rating}</span>
+                                            ) : '—'}
+                                        </td>
+                                        <td>
+                                            <div className={styles.actionBtns}>
+                                                <button className="btn btn-ghost btn-sm" onClick={() => setModal(p)}>Edit</button>
+                                                <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm(p)}>Delete</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
 
@@ -311,41 +332,43 @@ export default function AdminPage() {
                         <div className={styles.pageHeader}>
                             <div>
                                 <h1 className={styles.pageTitle}>Orders</h1>
-                                <p className={styles.pageDate}>{orders.length} total orders · {fmt(orders.reduce((s,o)=>s+(o.total||0),0))} revenue</p>
+                                <p className={styles.pageDate}>
+                                    {loadingOrders ? 'Loading…' : `${orders.length} total orders · ${fmt(orders.reduce((s, o) => s + (o.total || 0), 0))} revenue`}
+                                </p>
                             </div>
                         </div>
 
-                        {loading ? (
-                            <div className="spinner-wrap"><div className="spinner" /></div>
+                        {loadingOrders ? (
+                            <LuxuryLoader label="Loading Orders" />
                         ) : orders.length === 0 ? (
-                            <div style={{textAlign:'center',padding:'4rem',color:'#8C8278'}}>
-                                <div style={{fontSize:40,marginBottom:'1rem',opacity:.3}}>📦</div>
+                            <div className={styles.emptyState}>
+                                <div className={styles.emptyStateIcon}>📦</div>
                                 <p>No orders yet. Orders will appear here after customers checkout.</p>
                             </div>
                         ) : (
-                            <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {orders.map(o => {
-                                    const addr = o.address || {};
-                                    const name = addr.full_name || o.customer_name || o.profiles?.full_name || 'Customer';
-                                    const phone = addr.phone || '—';
-                                    const email = addr.email || o.profiles?.email || '—';
+                                    const addr    = o.address || {};
+                                    const name    = addr.full_name || o.customer_name || o.profiles?.full_name || 'Customer';
+                                    const phone   = addr.phone || '—';
+                                    const email   = addr.email || o.profiles?.email || '—';
                                     const addrStr = [addr.line1, addr.line2, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ');
                                     return (
                                         <div key={o.id} className={styles.orderCard}>
                                             <div className={styles.orderCardTop}>
                                                 <div>
-                                                    <code className={styles.orderId}>{(o.id||'').toString().slice(0,20)}</code>
-                                                    <div style={{marginTop:4,fontSize:10,color:'#8C8278'}}>
-                                                        {new Date(o.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                                                    <code className={styles.orderId}>{(o.id || '').toString().slice(0, 20)}</code>
+                                                    <div style={{ marginTop: 4, fontSize: 10, color: 'var(--text-muted)' }}>
+                                                        {new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                     </div>
                                                 </div>
-                                                <div style={{display:'flex',gap:'1rem',alignItems:'center'}}>
-                                                    <span className={styles.priceCell} style={{fontSize:16}}>{fmt(o.total)}</span>
-                                                    <span className={styles.statusPill} style={{background:STATUS_COLORS[o.status]+'22',color:STATUS_COLORS[o.status]}}>
+                                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                    <span className={styles.priceCell} style={{ fontSize: 16 }}>{fmt(o.total)}</span>
+                                                    <span className={styles.statusPill} style={{ background: STATUS_COLORS[o.status] + '22', color: STATUS_COLORS[o.status] }}>
                             {o.status}
                           </span>
-                                                    <select className={styles.statusSelect} value={o.status} onChange={e=>handleStatusChange(o.id,e.target.value)}>
-                                                        {['pending','processing','shipped','delivered','cancelled'].map(s=>(
+                                                    <select className={styles.statusSelect} value={o.status} onChange={e => handleStatusChange(o.id, e.target.value)}>
+                                                        {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => (
                                                             <option key={s} value={s}>{s}</option>
                                                         ))}
                                                     </select>
@@ -353,34 +376,30 @@ export default function AdminPage() {
                                             </div>
 
                                             <div className={styles.orderCardBody}>
-                                                {/* Customer */}
                                                 <div className={styles.orderSection}>
                                                     <div className={styles.orderSectionTitle}>👤 Customer</div>
                                                     <div className={styles.orderDetail}><strong>{name}</strong></div>
                                                     <div className={styles.orderDetail}>📞 {phone}</div>
                                                     <div className={styles.orderDetail}>✉️ {email}</div>
                                                 </div>
-                                                {/* Delivery Address */}
                                                 <div className={styles.orderSection}>
                                                     <div className={styles.orderSectionTitle}>📍 Delivery Address</div>
                                                     {addrStr ? (
                                                         <>
-                                                            <div className={styles.orderDetail}>{addr.line1}{addr.line2 ? ', '+addr.line2 : ''}</div>
+                                                            <div className={styles.orderDetail}>{addr.line1}{addr.line2 ? ', ' + addr.line2 : ''}</div>
                                                             <div className={styles.orderDetail}>{addr.city}, {addr.state}</div>
                                                             <div className={styles.orderDetail}>PIN: {addr.pincode} · {addr.country || 'India'}</div>
                                                         </>
-                                                    ) : <div className={styles.orderDetail} style={{color:'#8C8278'}}>No address saved</div>}
+                                                    ) : <div className={styles.orderDetail} style={{ color: 'var(--text-muted)' }}>No address saved</div>}
                                                 </div>
-                                                {/* Payment */}
                                                 <div className={styles.orderSection}>
                                                     <div className={styles.orderSectionTitle}>💳 Payment</div>
                                                     <div className={styles.orderDetail}>Method: <strong>{o.payment_method || 'razorpay'}</strong></div>
-                                                    {o.payment_id && <div className={styles.orderDetail} style={{wordBreak:'break-all'}}>ID: <code style={{fontSize:10}}>{o.payment_id}</code></div>}
+                                                    {o.payment_id && <div className={styles.orderDetail} style={{ wordBreak: 'break-all' }}>ID: <code style={{ fontSize: 10 }}>{o.payment_id}</code></div>}
                                                     <div className={styles.orderDetail}>Subtotal: {fmt(o.subtotal)} + GST: {fmt(o.tax)}</div>
                                                 </div>
                                             </div>
 
-                                            {/* Items */}
                                             {o.order_items && o.order_items.length > 0 && (
                                                 <div className={styles.orderItems}>
                                                     {o.order_items.map((item, idx) => (

@@ -2,11 +2,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
+import { ProductGridSkeleton } from '../components/ProductCardSkeleton';
 import Footer from '../components/Footer';
 import { fetchProducts } from '../lib/productService';
 import styles from './ShopPage.module.css';
 
-const CATEGORIES = ['', 'Jewellery', 'Watches', 'Accessories', 'Fragrance', 'Clothing'];
+const CATEGORIES = ['', 'Jewellery', 'Watches', 'Accessories', 'Fragrance'];
 
 export default function ShopPage() {
     const { category: routeCategory } = useParams();
@@ -81,7 +82,9 @@ export default function ShopPage() {
             <section className="section">
                 <div className="container">
                     {loading ? (
-                        <div className="spinner-wrap"><div className="spinner" /></div>
+                        <div className={styles.grid}>
+                            <ProductGridSkeleton count={8} />
+                        </div>
                     ) : products.length === 0 ? (
                         <div className={styles.empty}>
                             <div className={styles.emptyIcon}>🔍</div>
