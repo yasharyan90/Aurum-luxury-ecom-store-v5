@@ -292,7 +292,6 @@ export default function TrackOrderPage() {
   // Auto-search if both params are present in the URL (e.g. from confirmation email link)
   useEffect(() => {
     if (prefillId && prefillEmail) handleSearch(prefillId, prefillEmail);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
