@@ -25,10 +25,10 @@ export default function Footer() {
 
         <div>
           <p className={styles.heading}>Client Services</p>
-          <span className={styles.link}>Private Appointments</span>
-          <span className={styles.link}>Bespoke Orders</span>
-          <span className={styles.link}>Authentication</span>
-          <span className={styles.link}>Returns & Care</span>
+          <Link to="/track-order"        className={styles.link}>Track Your Order</Link>
+          <a href="mailto:concierge@aurum-boutique.com" className={styles.link}>Private Appointments</a>
+          <a href="mailto:concierge@aurum-boutique.com" className={styles.link}>Bespoke Orders</a>
+          <Link to="/track-order"        className={styles.link}>Returns & Care</Link>
         </div>
 
         <div>

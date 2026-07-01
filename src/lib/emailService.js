@@ -59,6 +59,7 @@ export async function sendOrderConfirmationEmail({ order, items, address }) {
   const orderId       = (order.id || '').toString().slice(0, 20);
   const addrLine      = [address?.line1, address?.line2, address?.city, address?.state, address?.pincode]
                           .filter(Boolean).join(', ');
+  const trackingUrl   = `${window.location.origin}/track-order?orderId=${order.id}&email=${encodeURIComponent(customerEmail)}`;
 
   // ── Option A: EmailJS ──────────────────────────────────────
   if (useEmailJS) {
@@ -78,6 +79,7 @@ export async function sendOrderConfirmationEmail({ order, items, address }) {
         address:      addrLine,
         payment_id:   order.payment_id || 'N/A',
         payment_method: order.payment_method || 'razorpay',
+        tracking_url: trackingUrl,
         store_name:   'AURUM Luxury Boutique',
         store_email:  'noreply@aurum.com',
       };
@@ -120,6 +122,7 @@ export async function sendOrderConfirmationEmail({ order, items, address }) {
   console.log(`Total:    ${fmt(order.total)}`);
   console.log(`\nDelivery Address:\n${addrLine}`);
   console.log(`\nPayment ID: ${order.payment_id || 'N/A'}`);
+  console.log(`\nTrack your order: ${trackingUrl}`);
   console.log('\n— AURUM Luxury Boutique');
   console.groupEnd();
 
@@ -131,6 +134,7 @@ export async function sendOrderStatusEmail({ order, address, newStatus }) {
   const customerName  = address?.full_name || 'Valued Customer';
   const customerEmail = address?.email     || '';
   const orderId       = (order.id || '').toString().slice(0, 20);
+  const trackingUrl   = `${window.location.origin}/track-order?orderId=${order.id}&email=${encodeURIComponent(customerEmail)}`;
 
   const statusMessages = {
     processing: { subject: 'Your AURUM order is being prepared', msg: 'Our team is carefully preparing your order for dispatch.' },
@@ -151,6 +155,7 @@ export async function sendOrderStatusEmail({ order, address, newStatus }) {
           order_id:   orderId,
           new_status: newStatus.toUpperCase(),
           status_message: info.msg,
+          tracking_url: trackingUrl,
           store_name: 'AURUM Luxury Boutique',
         });
         console.log('✅ Status update email sent to', customerEmail);
@@ -160,5 +165,6 @@ export async function sendOrderStatusEmail({ order, address, newStatus }) {
   }
 
   console.log(`📧 STATUS EMAIL (demo): ${info.subject} → ${customerEmail}`);
+  console.log(`   Track at: ${trackingUrl}`);
   return { success: true, method: 'demo' };
 }

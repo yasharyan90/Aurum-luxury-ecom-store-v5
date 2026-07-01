@@ -1,7 +1,7 @@
 // src/lib/orderService.js
 import { supabase } from './supabase';
 import { MOCK_ORDERS } from './mockData';
-import { sendOrderConfirmationEmail } from './emailService';
+import { sendOrderConfirmationEmail, sendOrderStatusEmail } from './emailService';
 
 const isConfigured = () =>
   process.env.REACT_APP_SUPABASE_URL &&
@@ -113,17 +113,98 @@ export async function fetchOrders(userId = null) {
 
 // ── Update order status (owner) ───────────────────────────────
 export async function updateOrderStatus(orderId, status) {
+  let updatedOrder;
+
   if (!isConfigured()) {
     const order = MOCK_ORDERS.find(o => o.id === orderId);
     if (order) order.status = status;
-    return order;
+    updatedOrder = order;
+  } else {
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId)
+      .select(`
+        *,
+        order_items (id, product_name, price, quantity, products (name, emoji))
+      `)
+      .single();
+    if (error) throw error;
+    updatedOrder = data;
   }
-  const { data, error } = await supabase
-    .from('orders')
-    .update({ status })
-    .eq('id', orderId)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+
+  // ── Notify the customer by email (non-blocking) ────────────
+  // Never let an email failure roll back the status update —
+  // the owner's action should always succeed even if the
+  // notification fails (no EmailJS keys set, network hiccup, etc).
+  if (updatedOrder?.address) {
+    sendOrderStatusEmail({
+      order:     updatedOrder,
+      address:   updatedOrder.address,
+      newStatus: status,
+    }).catch(err => console.warn('Status email skipped:', err));
+  }
+
+  return updatedOrder;
+}
+
+// ── Public order tracking lookup (no auth required) ──────────
+// Customer enters Order ID + the email used at checkout.
+// Backed by a SECURITY DEFINER Supabase function so it can only
+// ever return the single matching order — never the full table.
+export async function trackOrder(orderId, email) {
+  if (!isConfigured()) {
+    const order = MOCK_ORDERS.find(o =>
+      o.id === orderId &&
+      (o.address?.email || '').toLowerCase() === email.toLowerCase()
+    );
+    if (!order) return null;
+    return {
+      ...order,
+      tracking_number:    order.tracking_number    || null,
+      carrier:             order.carrier             || null,
+      estimated_delivery:  order.estimated_delivery  || null,
+      status_updated_at:   order.status_updated_at   || order.created_at,
+    };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('track_order', {
+      p_order_id: orderId,
+      p_email:    email,
+    });
+    if (error) throw error;
+    if (!data || data.length === 0) return null;
+
+    const order = data[0];
+
+    const { data: items } = await supabase.rpc('track_order_items', {
+      p_order_id: orderId,
+      p_email:    email,
+    });
+
+    return { ...order, order_items: items || [] };
+  } catch (err) {
+    console.error('trackOrder error:', err);
+    throw new Error('Could not find an order matching that ID and email.');
+  }
+}
+
+// ── Subscribe to live status changes for a user's orders ─────
+// Returns an unsubscribe function. Used by MyOrdersPage so the
+// status badge updates the instant the owner changes it — no
+// manual refresh needed.
+export function subscribeToOrderUpdates(userId, onUpdate) {
+  if (!isConfigured() || !userId) return () => {};
+
+  const channel = supabase
+    .channel(`orders-user-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'orders', filter: `user_id=eq.${userId}` },
+      (payload) => onUpdate(payload.new)
+    )
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
 }
