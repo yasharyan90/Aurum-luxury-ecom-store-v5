@@ -4,148 +4,152 @@ import { MOCK_ORDERS } from './mockData';
 import { sendOrderConfirmationEmail, sendOrderStatusEmail } from './emailService';
 
 const isConfigured = () =>
-  process.env.REACT_APP_SUPABASE_URL &&
-  !process.env.REACT_APP_SUPABASE_URL.includes('placeholder');
+    process.env.REACT_APP_SUPABASE_URL &&
+    !process.env.REACT_APP_SUPABASE_URL.includes('placeholder');
 
 // ── Place a new order ─────────────────────────────────────────
 export async function placeOrder({ userId, items, subtotal, tax, total, address, paymentId, paymentMethod }) {
-  const orderData = {
-    user_id:        userId,
-    status:         'paid',
-    subtotal,
-    tax,
-    total,
-    address,
-    payment_id:     paymentId || null,
-    payment_method: paymentMethod || 'razorpay',
-  };
-
-  let order;
-
-  if (!isConfigured()) {
-    // Demo mode
-    order = {
-      ...orderData,
-      id:            'ORD-' + Date.now(),
-      created_at:    new Date().toISOString(),
-      customer_name: address?.full_name || 'Customer',
-      order_items:   items.map(item => ({
-        product_name: item.name,
-        price:        item.price,
-        quantity:     item.qty,
-        emoji:        item.emoji,
-        products:     { name: item.name, emoji: item.emoji },
-      })),
+    const orderData = {
+        user_id:        userId,
+        status:         'paid',
+        subtotal,
+        tax,
+        total,
+        address,
+        payment_id:     paymentId || null,
+        payment_method: paymentMethod || 'razorpay',
     };
-    MOCK_ORDERS.unshift(order);
-  } else {
-    // Real Supabase
-    const { data: newOrder, error: orderError } = await supabase
-      .from('orders')
-      .insert([orderData])
-      .select()
-      .single();
-    if (orderError) throw orderError;
 
-    const orderItems = items.map(item => ({
-      order_id:     newOrder.id,
-      product_id:   item.id,
-      product_name: item.name,
-      price:        item.price,
-      quantity:     item.qty,
-    }));
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-    if (itemsError) throw itemsError;
+    let order;
 
-    order = { ...newOrder, order_items: orderItems };
-  }
+    if (!isConfigured()) {
+        // Demo mode
+        order = {
+            ...orderData,
+            id:            'ORD-' + Date.now(),
+            created_at:    new Date().toISOString(),
+            customer_name: address?.full_name || 'Customer',
+            order_items:   items.map(item => ({
+                product_name: item.name,
+                price:        item.price,
+                quantity:     item.qty,
+                emoji:        item.emoji,
+                products:     { name: item.name, emoji: item.emoji },
+            })),
+        };
+        MOCK_ORDERS.unshift(order);
+    } else {
+        // Real Supabase
+        const { data: newOrder, error: orderError } = await supabase
+            .from('orders')
+            .insert([orderData])
+            .select()
+            .single();
+        if (orderError) throw orderError;
 
-  // ── Send confirmation email (non-blocking) ──────────────
-  sendOrderConfirmationEmail({ order, items: order.order_items || items.map(i => ({ ...i, quantity: i.qty })), address })
-    .catch(err => console.warn('Email send skipped:', err));
+        const orderItems = items.map(item => ({
+            order_id:     newOrder.id,
+            product_id:   item.id,
+            product_name: item.name,
+            price:        item.price,
+            quantity:     item.qty,
+        }));
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+        if (itemsError) throw itemsError;
 
-  return order;
+        order = { ...newOrder, order_items: orderItems };
+    }
+
+    // ── Send confirmation email (non-blocking) ──────────────
+    sendOrderConfirmationEmail({ order, items: order.order_items || items.map(i => ({ ...i, quantity: i.qty })), address })
+        .catch(err => console.warn('Email send skipped:', err));
+
+    return order;
 }
 
 // ── Fetch orders for a specific user ─────────────────────────
 export async function fetchUserOrders(userId) {
-  if (!isConfigured()) {
-    return MOCK_ORDERS.filter(o => o.user_id === userId || true).slice(0, 5); // demo: show all
-  }
-  try {
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
+    if (!isConfigured()) {
+        return MOCK_ORDERS.filter(o => o.user_id === userId || true).slice(0, 5); // demo: show all
+    }
+    try {
+        const { data, error } = await supabase
+            .from('orders')
+            .select(`
         *,
         order_items (
           id, product_name, price, quantity,
           products ( name, emoji, brand, category )
         )
       `)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('fetchUserOrders error:', err);
-    return [];
-  }
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+    } catch (err) {
+        console.error('fetchUserOrders error:', err);
+        return [];
+    }
 }
 
 // ── Fetch all orders (owner) ──────────────────────────────────
 export async function fetchOrders(userId = null) {
-  if (!isConfigured()) return MOCK_ORDERS;
-  try {
-    let query = supabase
-      .from('orders')
-      .select(`
+    if (!isConfigured()) return MOCK_ORDERS;
+    try {
+        let query = supabase
+            .from('orders')
+            .select(`
         *,
         profiles:user_id (full_name, email),
         order_items (*, products (name, emoji))
       `)
-      .order('created_at', { ascending: false });
-    if (userId) query = query.eq('user_id', userId);
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
-  } catch { return MOCK_ORDERS; }
+            .order('created_at', { ascending: false });
+        if (userId) query = query.eq('user_id', userId);
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+    } catch { return MOCK_ORDERS; }
 }
 
 // ── Update order status (owner) ───────────────────────────────
 export async function updateOrderStatus(orderId, status) {
-  let updatedOrder;
+    let updatedOrder;
 
-  if (!isConfigured()) {
-    const order = MOCK_ORDERS.find(o => o.id === orderId);
-    if (order) order.status = status;
-    updatedOrder = order;
-  } else {
-    const { data, error } = await supabase
-      .from('orders')
-      .update({ status })
-      .eq('id', orderId)
-      .select(`
-        *,
-        order_items (id, product_name, price, quantity, products (name, emoji))
-      `)
-      .single();
-    if (error) throw error;
-    updatedOrder = data;
-  }
+    if (!isConfigured()) {
+        // Demo mode — update in-memory
+        const order = MOCK_ORDERS.find(o => o.id === orderId);
+        if (order) {
+            order.status = status;
+            order.status_updated_at = new Date().toISOString();
+        }
+        updatedOrder = order;
+    } else {
+        // Real Supabase — update only the status column
+        const { data, error } = await supabase
+            .from('orders')
+            .update({ status, status_updated_at: new Date().toISOString() })
+            .eq('id', orderId)
+            .select('*');
 
-  // ── Notify the customer by email (non-blocking) ────────────
-  // Never let an email failure roll back the status update —
-  // the owner's action should always succeed even if the
-  // notification fails (no EmailJS keys set, network hiccup, etc).
-  if (updatedOrder?.address) {
-    sendOrderStatusEmail({
-      order:     updatedOrder,
-      address:   updatedOrder.address,
-      newStatus: status,
-    }).catch(err => console.warn('Status email skipped:', err));
-  }
+        // Surface the real error message — never silently swallow it
+        if (error) {
+            console.error('[updateOrderStatus] Supabase error:', error);
+            throw new Error(error.message || JSON.stringify(error));
+        }
+        // .select() without .single() returns an array — take first item
+        updatedOrder = Array.isArray(data) ? data[0] : data;
+    }
 
-  return updatedOrder;
+    // Send status email non-blocking — never let it fail the update
+    if (updatedOrder?.address) {
+        sendOrderStatusEmail({
+            order:     updatedOrder,
+            address:   updatedOrder.address,
+            newStatus: status,
+        }).catch(err => console.warn('Status email skipped:', err));
+    }
+
+    return updatedOrder;
 }
 
 // ── Public order tracking lookup (no auth required) ──────────
@@ -153,41 +157,41 @@ export async function updateOrderStatus(orderId, status) {
 // Backed by a SECURITY DEFINER Supabase function so it can only
 // ever return the single matching order — never the full table.
 export async function trackOrder(orderId, email) {
-  if (!isConfigured()) {
-    const order = MOCK_ORDERS.find(o =>
-      o.id === orderId &&
-      (o.address?.email || '').toLowerCase() === email.toLowerCase()
-    );
-    if (!order) return null;
-    return {
-      ...order,
-      tracking_number:    order.tracking_number    || null,
-      carrier:             order.carrier             || null,
-      estimated_delivery:  order.estimated_delivery  || null,
-      status_updated_at:   order.status_updated_at   || order.created_at,
-    };
-  }
+    if (!isConfigured()) {
+        const order = MOCK_ORDERS.find(o =>
+            o.id === orderId &&
+            (o.address?.email || '').toLowerCase() === email.toLowerCase()
+        );
+        if (!order) return null;
+        return {
+            ...order,
+            tracking_number:    order.tracking_number    || null,
+            carrier:             order.carrier             || null,
+            estimated_delivery:  order.estimated_delivery  || null,
+            status_updated_at:   order.status_updated_at   || order.created_at,
+        };
+    }
 
-  try {
-    const { data, error } = await supabase.rpc('track_order', {
-      p_order_id: orderId,
-      p_email:    email,
-    });
-    if (error) throw error;
-    if (!data || data.length === 0) return null;
+    try {
+        const { data, error } = await supabase.rpc('track_order', {
+            p_order_id: orderId,
+            p_email:    email,
+        });
+        if (error) throw error;
+        if (!data || data.length === 0) return null;
 
-    const order = data[0];
+        const order = data[0];
 
-    const { data: items } = await supabase.rpc('track_order_items', {
-      p_order_id: orderId,
-      p_email:    email,
-    });
+        const { data: items } = await supabase.rpc('track_order_items', {
+            p_order_id: orderId,
+            p_email:    email,
+        });
 
-    return { ...order, order_items: items || [] };
-  } catch (err) {
-    console.error('trackOrder error:', err);
-    throw new Error('Could not find an order matching that ID and email.');
-  }
+        return { ...order, order_items: items || [] };
+    } catch (err) {
+        console.error('trackOrder error:', err);
+        throw new Error('Could not find an order matching that ID and email.');
+    }
 }
 
 // ── Subscribe to live status changes for a user's orders ─────
@@ -195,16 +199,16 @@ export async function trackOrder(orderId, email) {
 // status badge updates the instant the owner changes it — no
 // manual refresh needed.
 export function subscribeToOrderUpdates(userId, onUpdate) {
-  if (!isConfigured() || !userId) return () => {};
+    if (!isConfigured() || !userId) return () => {};
 
-  const channel = supabase
-    .channel(`orders-user-${userId}`)
-    .on(
-      'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'orders', filter: `user_id=eq.${userId}` },
-      (payload) => onUpdate(payload.new)
-    )
-    .subscribe();
+    const channel = supabase
+        .channel(`orders-user-${userId}`)
+        .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'orders', filter: `user_id=eq.${userId}` },
+            (payload) => onUpdate(payload.new)
+        )
+        .subscribe();
 
-  return () => supabase.removeChannel(channel);
+    return () => supabase.removeChannel(channel);
 }
