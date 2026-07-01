@@ -179,7 +179,7 @@ export default function AdminPage() {
                 <div className={styles.dashGrid}>
                   <div className={styles.panel}>
                     <h2 className={styles.panelTitle}>Category Breakdown</h2>
-                    {['Jewellery', 'Watches', 'Accessories', 'Fragrance'].map(cat => {
+                    {['Jewellery', 'Watches', 'Clothing', 'Accessories', 'Fragrance'].map(cat => {
                       const count = products.filter(p => p.category === cat).length;
                       const pct   = products.length ? Math.round((count / products.length) * 100) : 0;
                       return (

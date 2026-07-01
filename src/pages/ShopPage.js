@@ -7,7 +7,7 @@ import Footer from '../components/Footer';
 import { fetchProducts } from '../lib/productService';
 import styles from './ShopPage.module.css';
 
-const CATEGORIES = ['', 'Jewellery', 'Watches', 'Accessories', 'Fragrance'];
+const CATEGORIES = ['', 'Jewellery', 'Watches', 'Clothing', 'Accessories', 'Fragrance'];
 
 export default function ShopPage() {
   const { category: routeCategory } = useParams();

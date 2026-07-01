@@ -61,10 +61,11 @@ export default function Navbar() {
 
       <div className={styles.center}>
         <Link to="/shop"                   className={`${styles.link} ${isActive('/shop') ? styles.linkActive : ''}`}>Collections</Link>
-        <Link to="/shop/Jewellery"         className={styles.link}>Jewellery</Link>
-        <Link to="/shop/Watches"           className={styles.link}>Watches</Link>
-        <Link to="/shop/Accessories"       className={styles.link}>Accessories</Link>
-        <Link to="/shop/Fragrance"         className={styles.link}>Fragrance</Link>
+        <Link to="/shop/Jewellery"         className={`${styles.link} ${isActive('/shop/Jewellery') ? styles.linkActive : ''}`}>Jewellery</Link>
+        <Link to="/shop/Watches"           className={`${styles.link} ${isActive('/shop/Watches') ? styles.linkActive : ''}`}>Watches</Link>
+        <Link to="/shop/Clothing"          className={`${styles.link} ${isActive('/shop/Clothing') ? styles.linkActive : ''}`}>Clothing</Link>
+        <Link to="/shop/Accessories"       className={`${styles.link} ${isActive('/shop/Accessories') ? styles.linkActive : ''}`}>Accessories</Link>
+        <Link to="/shop/Fragrance"         className={`${styles.link} ${isActive('/shop/Fragrance') ? styles.linkActive : ''}`}>Fragrance</Link>
         <Link to="/track-order"            className={`${styles.link} ${isActive('/track-order') ? styles.linkActive : ''}`}>Track Order</Link>
       </div>
 

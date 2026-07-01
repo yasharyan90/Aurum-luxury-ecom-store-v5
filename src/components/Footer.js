@@ -19,6 +19,7 @@ export default function Footer() {
           <p className={styles.heading}>Collections</p>
           <Link to="/shop/Jewellery"    className={styles.link}>Fine Jewellery</Link>
           <Link to="/shop/Watches"      className={styles.link}>Timepieces</Link>
+          <Link to="/shop/Clothing"     className={styles.link}>Clothing</Link>
           <Link to="/shop/Accessories"  className={styles.link}>Accessories</Link>
           <Link to="/shop/Fragrance"    className={styles.link}>Fragrance</Link>
         </div>

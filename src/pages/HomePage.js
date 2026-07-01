@@ -10,6 +10,7 @@ import styles from './HomePage.module.css';
 const CATEGORIES = [
   { key: 'Jewellery',   emoji: '💎', label: 'Jewellery',   sub: 'Fine Gems & Metals'    },
   { key: 'Watches',     emoji: '⌚', label: 'Watches',     sub: 'Timeless Precision'     },
+  { key: 'Clothing',    emoji: '👔', label: 'Clothing',    sub: 'Couture & Ready-to-Wear' },
   { key: 'Accessories', emoji: '👜', label: 'Accessories', sub: 'Leather & Silk'         },
   { key: 'Fragrance',   emoji: '🌹', label: 'Fragrance',   sub: 'Rare Essences'          },
 ];
